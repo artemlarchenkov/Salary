@@ -4,7 +4,6 @@ from datetime import date, datetime, timedelta
 import jwt
 from passlib.context import CryptContext
 import jwt.exceptions
-import uvicorn
 
 app = FastAPI()
 
@@ -40,7 +39,8 @@ class User(BaseModel):
 
 class Salary(BaseModel):
     salary: int
-    next_promotion_date: date
+    next_promotion_date: datetime
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -94,15 +94,12 @@ async def login_for_access_token(user: User):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/salary", response_model=Salary)
-async def read_user_salary(user: User = Depends(get_current_user)):
+async def read_user_salary(current_user: dict = Depends(get_current_user)):
     try:
-        return Salary(salary=user["salary"], next_promotion_date=date.fromisoformat(user["promotion_date"]))
+        return Salary(salary=current_user["salary"], next_promotion_date=date.fromisoformat(current_user["promotion_date"]))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000, log_level="info", reload=True)
